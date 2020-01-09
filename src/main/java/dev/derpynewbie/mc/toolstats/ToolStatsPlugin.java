@@ -65,14 +65,15 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        increment(event.getPlayer().getInventory().getItemInMainHand(), ItemInfoType.TOOL);
+        if (ItemInfoType.TOOL.contains(event.getPlayer().getInventory().getItemInMainHand().getType()))
+            increment(event.getPlayer().getInventory().getItemInMainHand(), ItemInfoType.TOOL);
     }
 
     @EventHandler
     public void onEntityKilled(EntityDeathEvent event) {
         Player player = event.getEntity().getKiller();
 
-        if (player != null) {
+        if (player != null && ItemInfoType.WEAPON.contains(player.getInventory().getItemInMainHand().getType())) {
             increment(player.getInventory().getItemInMainHand(), ItemInfoType.WEAPON);
         }
     }
@@ -264,7 +265,7 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
                 Material.DIAMOND_SHOVEL, Material.DIAMOND_PICKAXE, Material.GOLDEN_AXE, Material.GOLDEN_HOE
         }, "toolStats", "toolStatsDisplay"),
         WEAPON("tooltip.weapon", new Material[]{
-                Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.GOLDEN_SWORD, Material.DIAMOND_SWORD
+                Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.GOLDEN_SWORD, Material.DIAMOND_SWORD, Material.BOW, Material.CROSSBOW
         }, "weaponStats", "weaponStatsDisplay"),
         ;
 
