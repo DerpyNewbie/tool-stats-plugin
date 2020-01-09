@@ -1,0 +1,9 @@
+tooltip:
+  tool: "Blocks Broken: %d"
+  weapon: "Enemies Killed: %d"
+help:
+  index: "&8&l&m                                  &r\n     Tool Stats Plugin\n     /<command> help\n     /<command> getStats\n     /<command> updateLore\n     /<command> removeLore\n     /<command> removeStats\n&8&l&m                                  &r"
+  get-stats: "&8&l&m                                  &r\n     /<command> getStats\n\n      Shows current item stats\n&8&l&m                                  &r"
+  update-lore: "&8&l&m                                  &r\n     /<command> updateLore\n\n      Updates item lore\n&8&l&m                                  &r"
+  remove-lore: "&8&l&m                                  &r\n     /<command> removeLore\n\n      Removes item lore\n&8&l&m                                  &r"
+  remove-stats: "&8&l&m                                  &r\n     /<command> removeStats\n\n      Removes item stats\n&8&l&m                                  &r"

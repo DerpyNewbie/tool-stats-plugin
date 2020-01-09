@@ -1,0 +1,16 @@
+main: "dev.derpynewbie.mc.toolstats.ToolStatsPlugin"
+name: "DerpyToolStats"
+website: "https://github.com/derpynewbie/tool-stats-plugin"
+description: "Displays current use of tool/swords"
+author: "DerpyNewbie"
+api-version: "1.13"
+version: ${project.version}
+commands:
+  toolstats:
+    description: "Managing command for tool stats."
+    usage: "/<command> <arg> [params]"
+    permission: "derpy.toolstats"
+permissions:
+  derpy.toolstats:
+    description: "Allows player to use /toolstats command."
+    default: op
