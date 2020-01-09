@@ -87,12 +87,6 @@
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
 
-        <!--PlaceholderAPI-->
-        <repository>
-            <id>placeholderapi</id>
-            <url>http://repo.extendedclip.com/content/repositories/placeholderapi/</url>
-        </repository>
-
     </repositories>
     <dependencies>
 
@@ -102,21 +96,6 @@
             <artifactId>spigot-api</artifactId>
             <version>1.14.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
-        </dependency>
-
-        <!--PlaceholderAPI-->
-        <dependency>
-            <groupId>me.clip</groupId>
-            <artifactId>placeholderapi</artifactId>
-            <version>2.10.4</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.18</version>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>
