@@ -11,7 +11,7 @@
 
     <groupId>dev.derpynewbie.mc</groupId>
     <artifactId>tool-stats</artifactId>
-    <version>1.0.0-${buildNumber}</version>
+    <version>1.0.1-${buildNumber}</version>
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
@@ -67,8 +67,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <doCheck>true</doCheck>
-                    <doUpdate>true</doUpdate>
+                    <doCheck>false</doCheck>
+                    <doUpdate>false</doUpdate>
                     <shortRevisionLength>6</shortRevisionLength>
                 </configuration>
             </plugin>

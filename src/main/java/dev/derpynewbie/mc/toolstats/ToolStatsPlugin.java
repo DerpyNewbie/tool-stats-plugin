@@ -18,7 +18,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,8 +30,9 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
     private static Pattern UPDATE_LORE_PATTERN = Pattern.compile("updatelore", Pattern.CASE_INSENSITIVE);
     private static Pattern REMOVE_LORE_PATTERN = Pattern.compile("resetlore|removelore", Pattern.CASE_INSENSITIVE);
     private static Pattern REMOVE_STATS_PATTERN = Pattern.compile("reset|removestats", Pattern.CASE_INSENSITIVE);
+    private static Pattern REFRESH_MATERIALS_PATTERN = Pattern.compile("refreshmaterials|refresh", Pattern.CASE_INSENSITIVE);
     private static Pattern HELP_PATTERN = Pattern.compile("help|h", Pattern.CASE_INSENSITIVE);
-    private static List<String> POSSIBLE_COMMANDS = Arrays.asList("help", "getStats", "updateLore", "removeLore", "removeStats");
+    private static List<String> POSSIBLE_COMMANDS = Arrays.asList("help", "getStats", "updateLore", "removeLore", "removeStats", "refreshMaterials");
 
     @Override
     public void onEnable() {
@@ -61,6 +61,11 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
     @Override
     public void onDisable() {
         super.onDisable();
+
+        for (ItemInfoType type :
+                ItemInfoType.values()) {
+            type.lastCacheUpdate = -1;
+        }
     }
 
     @EventHandler
@@ -108,6 +113,8 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
             return commandRemoveLore(sender);
         else if (REMOVE_STATS_PATTERN.matcher(match).matches())
             return commandResetStats(sender);
+        else if (REFRESH_MATERIALS_PATTERN.matcher(match).matches())
+            return commandRefreshMaterials(sender);
         else
             return commandHelp(sender, label, args);
     }
@@ -206,6 +213,25 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
 
     }
 
+    private boolean commandRefreshMaterials(CommandSender sender) {
+        int curr = 0;
+        int max = ItemInfoType.values().length;
+        sender.sendMessage(ChatColor.GRAY + "Refreshing material lists... " + ChatColor.DARK_GRAY + "[" + curr + "/" + max + "]");
+        for (ItemInfoType type :
+                ItemInfoType.values()) {
+            try {
+                curr++;
+                sender.sendMessage(ChatColor.GRAY + "Refreshing in " + type.name() + ". " + ChatColor.DARK_GRAY +  "[" + curr + "/" + max + "]");
+                type.reloadMaterials();
+            } catch (Exception ex) {
+                sender.sendMessage(ChatColor.RED + "Refreshing failed in " + type.name() +". " + ChatColor.DARK_GRAY +  "[" + curr + "/" + max + "] : " + ex.getMessage());
+                curr--;
+            }
+        }
+        sender.sendMessage(ChatColor.GREEN + "Successfully refreshed material lists. " + ChatColor.DARK_GREEN +  "[" + curr + "/" + max + "]");
+        return true;
+    }
+
     private boolean commandHelp(CommandSender sender, String label, String[] args) {
         if (args.length <= 1) {
             sender.sendMessage(
@@ -242,6 +268,12 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
                             getConfig().getString("help.remove-stats")).replaceAll("<command>", label)
                     )
             );
+        else if (REFRESH_MATERIALS_PATTERN.matcher(match).matches())
+            sender.sendMessage(
+                    ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(
+                            getConfig().getString("help.refresh-materials")).replaceAll("<command>", label)
+                    )
+            );
         else
             sender.sendMessage(
                     ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(
@@ -252,32 +284,26 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
         return true;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static ToolStatsPlugin getInstance() {
         return INSTANCE;
     }
 
     public enum ItemInfoType {
-        TOOL("tooltip.tool", new Material[]{
-                Material.WOODEN_SHOVEL, Material.WOODEN_PICKAXE, Material.WOODEN_AXE, Material.WOODEN_HOE,
-                Material.STONE_SHOVEL, Material.STONE_PICKAXE, Material.WOODEN_AXE, Material.STONE_HOE,
-                Material.IRON_SHOVEL, Material.IRON_PICKAXE, Material.IRON_AXE, Material.IRON_HOE,
-                Material.GOLDEN_SHOVEL, Material.GOLDEN_PICKAXE, Material.GOLDEN_AXE, Material.GOLDEN_HOE,
-                Material.DIAMOND_SHOVEL, Material.DIAMOND_PICKAXE, Material.GOLDEN_AXE, Material.GOLDEN_HOE
-        }, "toolStats", "toolStatsDisplay"),
-        WEAPON("tooltip.weapon", new Material[]{
-                Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.GOLDEN_SWORD, Material.DIAMOND_SWORD, Material.BOW, Material.CROSSBOW
-        }, "weaponStats", "weaponStatsDisplay"),
+        TOOL("tooltip.tool", "item-info-type.tool", "toolStats", "toolStatsDisplay"),
+        WEAPON("tooltip.weapon", "item-info-type.weapon", "weaponStats", "weaponStatsDisplay"),
         ;
 
-
-        String configPath;
-        Material[] materials;
+        String msgConfigPath;
+        String materialConfigPath;
         String key;
         String displayKey;
+        Material[] cachedMats = null;
+        public long lastCacheUpdate = -1;
 
-        ItemInfoType(String msgConfigPath, Material[] checkingMaterials, String key, String displayKey) {
-            this.configPath = msgConfigPath;
-            this.materials = checkingMaterials;
+        ItemInfoType(String msgConfigPath, String materialConfigPath, String key, String displayKey) {
+            this.msgConfigPath = msgConfigPath;
+            this.materialConfigPath = materialConfigPath;
             this.key = key;
             this.displayKey = displayKey;
         }
@@ -308,9 +334,35 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
             item.setItemMeta(meta);
         }
 
+        public Material[] getMaterials() {
+            long currentTime = System.currentTimeMillis();
+            if (cachedMats == null || lastCacheUpdate - currentTime > 28800000) { // max cache time = 8 hours - refreshes it every 8 hour or after onDisable() was called.
+                reloadMaterials();
+            }
+
+            return cachedMats;
+        }
+
+        public Material[] reloadMaterials() {
+            ToolStatsPlugin.getInstance().getLogger().warning("Refreshing material list in " + this.name() + ". this might cause lag.");
+            List<String> rawMatList = ToolStatsPlugin.getInstance().getConfig().getStringList(materialConfigPath);
+            List<Material> materialList = new ArrayList<>();
+            for (String s :
+                    rawMatList) {
+                Material m = Material.getMaterial(s);
+                if (m != null)
+                    materialList.add(m);
+            }
+
+            cachedMats = materialList.toArray(new Material[0]);
+            lastCacheUpdate = System.currentTimeMillis();
+            ToolStatsPlugin.getInstance().getLogger().info("Material list has successfully refreshed in " + this.name() + ".");
+            return materialList.toArray(new Material[0]);
+        }
+
         public boolean contains(Material refMat) {
             for (Material mat :
-                    materials) {
+                    getMaterials()) {
                 if (mat.equals(refMat)) {
                     return true;
                 }
@@ -321,7 +373,7 @@ public class ToolStatsPlugin extends JavaPlugin implements Listener, TabExecutor
 
         public ItemMeta getUpdatedLoreItemMeta(@NotNull ItemMeta meta) {
             PersistentDataContainer data = meta.getPersistentDataContainer();
-            String format = ChatColor.WHITE + ToolStatsPlugin.getInstance().getConfig().getString(configPath);
+            String format = ChatColor.WHITE + ToolStatsPlugin.getInstance().getConfig().getString(msgConfigPath);
             List<String> lore = meta.getLore();
             int value = getValue(meta);
             int displayPos;
