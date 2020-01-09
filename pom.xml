@@ -11,7 +11,7 @@
 
     <groupId>dev.derpynewbie.mc</groupId>
     <artifactId>tool-stats</artifactId>
-    <version>1.0.0-{buildNumber}</version>
+    <version>1.0.0-${buildNumber}</version>
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
