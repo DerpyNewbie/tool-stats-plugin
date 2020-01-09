@@ -10,7 +10,7 @@
     </scm>
 
     <groupId>dev.derpynewbie.mc</groupId>
-    <artifactId>tool-stats</artifactId>
+    <artifactId>derpy-tool-stats</artifactId>
     <version>1.0.1-${buildNumber}</version>
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
